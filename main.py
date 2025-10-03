@@ -57,7 +57,7 @@ class CargoShareApp:
                 bg=self.bg_color, fg=self.text_color, font=("Arial", 10)).pack()
         self.cout_entry = tk.Entry(frame_calcul, width=30, font=("Arial", 10))
         self.cout_entry.pack(pady=5)
-        self.cout_entry.bind('<KeyRelease>', self.update_cout_total)
+        self.cout_entry.bind('<keyrelease>', self.update_cout_total)
         
         tk.Label(frame_calcul, text="Revente totale (aUEC):", 
                 bg=self.bg_color, fg=self.text_color, font=("Arial", 10)).pack()
@@ -187,7 +187,7 @@ if __name__ == "__main__":
         root = tk.Tk()
         try:
             # Try to use a more futuristic font if available
-            root.option_add('*Font', 'Segoe UI 10')
+            root.option_add('*Font', ('Segoe UI', 10))
         except Exception:
             # Fallback to default font
             pass
