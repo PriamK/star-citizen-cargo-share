@@ -57,7 +57,7 @@ class CargoShareApp:
                 bg=self.bg_color, fg=self.text_color, font=("Arial", 10)).pack()
         self.cout_entry = tk.Entry(frame_calcul, width=30, font=("Arial", 10))
         self.cout_entry.pack(pady=5)
-        self.cout_entry.bind('<keyrelease>', self.update_cout_total)
+        self.cout_entry.bind('<KeyRelease>', self.update_cout_total)
         
         tk.Label(frame_calcul, text="Revente totale (aUEC):", 
                 bg=self.bg_color, fg=self.text_color, font=("Arial", 10)).pack()
