@@ -280,8 +280,28 @@ class CargoShareApp:
         if investisseurs:
             self.resultat_text.insert(tk.END, f"🚀 INVESTISSEURS ({int(p_inv*100)}%)\n")
             self.resultat_text.insert(tk.END, "────────────────────────────────────────────────────────────────────\n")
-            for nom, m in investisseurs.items():
-                part = resultats.get(nom, 0)
-                self.resultat_text.insert(tk.END, f"  {nom}:\n")
-                self.resultat_text.insert(tk.END, f"    - Investi: {m:,.2f} aUEC\n".replace(',', ' '))
-                self.resultat_text.insert(tk.END, f"    - Part du bénéfice: {part:
+           for nom, m in investisseurs.items():
+    part = resultats.get(nom, 0)
+    self.resultat_text.insert(tk.END, f"  {nom}:\n")
+    self.resultat_text.insert(tk.END, f"    - Investi: {m:,.2f} aUEC\n".replace(',', ' '))
+    self.resultat_text.insert(tk.END, f"    - Part du bénéfice: {part:,.2f} aUEC\n".replace(',', ' '))
+    self.resultat_text.insert(tk.END, f"    - TOTAL REÇU: {m + part:,.2f} aUEC\n\n".replace(',', ' '))
+
+if __name__ == "__main__":
+    try:
+        root = tk.Tk()
+        app = CargoShareApp(root)
+        root.mainloop()
+    except Exception as e:
+        import traceback
+        error_msg = f"ERREUR CRITIQUE:\n\n{str(e)}\n\nDétails techniques:\n{traceback.format_exc()}"
+        print(error_msg)
+        try:
+            root_err = tk.Tk()
+            root_err.withdraw()
+            messagebox.showerror("Crash - Star Citizen Cargo Share", error_msg)
+            root_err.destroy()
+        except Exception:
+            print("Impossible d'afficher la boîte de dialogue d'erreur.")
+        input("Appuyez sur Entrée pour fermer...")
+
