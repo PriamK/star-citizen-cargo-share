@@ -199,8 +199,8 @@ class CargoShareApp:
             self.history_list.insert(tk.END, "")
 
     def calculer_parts(self):
-        GAIN_MAX_RATIO = 5  # Plafond x la mise, modifie comme tu veux !
-        INVEST_BONUS_RATIO = 0.10  # 10% de bonus minimal sur équipier
+        GAIN_MAX_RATIO = 5
+        INVEST_BONUS_RATIO = 0.10
         if not self.personnes:
             messagebox.showwarning("Attention", "Ajoutez au moins une personne.")
             return
@@ -244,7 +244,7 @@ class CargoShareApp:
                     reduction_par_equipier = a_rajouter / len(non_investisseurs)
                     for nom_eq in non_investisseurs:
                         resultats[nom_eq] = max(0, resultats[nom_eq] - reduction_par_equipier)
-        # Correction équité 2 : plafond de gain investisseur
+        # Correction équité 2 : plafond
         for nom_inv, montant in investisseurs.items():
             gain_total = montant + resultats[nom_inv]
             gain_max = montant * GAIN_MAX_RATIO
@@ -260,7 +260,7 @@ class CargoShareApp:
                 if resultats[nom] > min_invest_total:
                     resultats[nom] = min_invest_total
                     correction_faite = True
-        # Bonus investisseur minimal : il doit avoir au moins +10% par rapport au meilleur équipier
+        # Bonus investisseur minimal : +10% par rapport au meilleur équipier
         if investisseurs and non_investisseurs:
             max_equipier = max([resultats[n] for n in non_investisseurs])
             min_bonus = max_equipier * INVEST_BONUS_RATIO
@@ -272,12 +272,19 @@ class CargoShareApp:
                         resultats[nom_inv] += ajust
                         correction_faite = True
 
+        # Normalisation finale : on s'assure que la somme des parts = bénéfice total
+        somme_parts = sum(resultats.values())
+        if abs(somme_parts - benefice_total) > 1:
+            ratio = benefice_total / somme_parts
+            for k in resultats:
+                resultats[k] *= ratio
+
         self.resultat_text.delete('1.0', tk.END)
         self.resultat_text.insert(tk.END, "════════════════════════════════════════════════════════════════════\n")
         self.resultat_text.insert(tk.END, f"BÉNÉFICE TOTAL: {benefice_total:,.2f} aUEC\n".replace(',', ' '))
         self.resultat_text.insert(tk.END, "════════════════════════════════════════════════════════════════════\n\n")
         if correction_faite:
-            self.resultat_text.insert(tk.END, "⚠️ Correction appliquée : équité investisseurs/équipiers, plafond rendement et bonus investisseur +10%\n\n")
+            self.resultat_text.insert(tk.END, "⚠️ Corrections appliquées : équité, plafond, bonus investisseur +10% et normalisation\n\n")
         if investisseurs:
             self.resultat_text.insert(tk.END, f"🚀 INVESTISSEURS ({int(p_inv*100)}%)\n")
             self.resultat_text.insert(tk.END, "────────────────────────────────────────────────────────────────────\n")
