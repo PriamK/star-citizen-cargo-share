@@ -6,7 +6,6 @@ from datetime import datetime
 
 HISTORY_FILE = os.path.join(os.path.dirname(__file__), "trade_history.json")
 
-# Création automatique du fichier historique si besoin
 if not os.path.exists(HISTORY_FILE):
     try:
         with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
@@ -28,7 +27,7 @@ class CargoShareApp:
         self.personnes = {}
         self.percent_equipier = tk.IntVar(value=15)
         self.history = self.load_history()
-        # Frames
+
         frame_personnes = tk.Frame(root, bg=self.panel_color, padx=20, pady=20, bd=1, relief=tk.GROOVE)
         frame_personnes.pack(fill=tk.X, padx=16, pady=(16, 10))
         title_label = tk.Label(frame_personnes, text="👨‍🚀 GESTION DES PERSONNES",
@@ -53,6 +52,7 @@ class CargoShareApp:
         self.liste_label = tk.Label(frame_personnes, text="", bg=self.panel_color, fg=self.text_color,
                                    font=("Consolas", 9), justify=tk.LEFT)
         self.liste_label.grid(row=3, column=0, columnspan=8, sticky="w", pady=(12,0))
+
         frame_calcul = tk.Frame(root, bg=self.panel_color, padx=20, pady=20, bd=1, relief=tk.GROOVE)
         frame_calcul.pack(fill=tk.X, padx=16, pady=10)
         calc_title = tk.Label(frame_calcul, text="💰 CALCUL DE RÉPARTITION",
@@ -77,6 +77,7 @@ class CargoShareApp:
                                  fg=self.fg_color, font=("Segoe UI", 10, "bold"),
                                  cursor="hand2", relief=tk.RAISED)
         btn_calculer.grid(row=3, column=0, columnspan=4, pady=12, sticky="w")
+
         container = tk.Frame(root, bg=self.bg_color)
         container.pack(fill=tk.BOTH, expand=True, padx=16, pady=(10, 16))
         frame_resultats = tk.Frame(container, bg=self.panel_color, padx=20, pady=12, bd=1, relief=tk.GROOVE)
@@ -227,21 +228,27 @@ class CargoShareApp:
             par_tete = part_non / len(non_investisseurs)
             for nom in non_investisseurs:
                 resultats[nom] = par_tete
-        # Correction pour garantir qu'aucun investisseur ne gagne moins qu'un équipier
+
+        # Correction équité : chaque investisseur doit recevoir au moins autant que le plus gros équipier
         max_equipier = max([resultats[n] for n in non_investisseurs], default=0)
         correction_faite = False
-        for nom, m in investisseurs.items():
-            part = resultats[nom]
-            total_recu = m + part
-            if total_recu < max_equipier:
-                resultats[nom] = max_equipier - m
+        for nom_inv, montant in investisseurs.items():
+            total_inv = montant + resultats[nom_inv]
+            if total_inv < max_equipier:
+                a_rajouter = max_equipier - total_inv
+                resultats[nom_inv] += a_rajouter
                 correction_faite = True
+                # on enlève ce bonus aux équipiers équitablement
+                if non_investisseurs:
+                    reduction_par_equipier = a_rajouter / len(non_investisseurs)
+                    for nom_eq in non_investisseurs:
+                        resultats[nom_eq] = max(0, resultats[nom_eq] - reduction_par_equipier)
         self.resultat_text.delete('1.0', tk.END)
         self.resultat_text.insert(tk.END, "════════════════════════════════════════════════════════════════════\n")
         self.resultat_text.insert(tk.END, f"BÉNÉFICE TOTAL: {benefice_total:,.2f} aUEC\n".replace(',', ' '))
         self.resultat_text.insert(tk.END, "════════════════════════════════════════════════════════════════════\n\n")
         if correction_faite:
-            self.resultat_text.insert(tk.END, "⚠️ Correction appliquée : aucun investisseur ne reçoit moins qu'un équipier\n\n")
+            self.resultat_text.insert(tk.END, "⚠️ Correction appliquée : aucun investisseur ne reçoit moins qu'un équipier\n\n")
         if investisseurs:
             self.resultat_text.insert(tk.END, f"🚀 INVESTISSEURS ({int(p_inv*100)}%)\n")
             self.resultat_text.insert(tk.END, "────────────────────────────────────────────────────────────────────\n")
