@@ -23,18 +23,10 @@
 
 - 🧮 **Calcul automatique** des parts de bénéfices selon les investissements
 - 👥 **Gestion des équipages** : distinction investisseurs/non-investisseurs
-- 💰 **Répartition équitable** : 85% pour les investisseurs, 15% pour les participants
+- 💰 **Répartition équitable** : 95% à 70% pour les investisseurs, 5% à 30% pour les participants
 - 🎨 **Interface moderne** inspirée de l'esthétique Star Citizen
 - 📊 **Rapports détaillés** avec récapitulatif complet
 - 🔄 **Calculs en temps réel** avec vérification automatique
-
-### 🌟 Design & Style
-
-L'application arbore un design **futuriste et immersif** :
-- 🔹 **Palette bleu foncé** rappelant l'interface Star Citizen
-- ⭐ **Éléments sci-fi** avec touches cyan et argent
-- 🖥️ **Interface claire et intuitive** pour une utilisation rapide
-- 🎮 **Esthétique gaming** adaptée à la communauté
 
 ---
 
@@ -142,22 +134,6 @@ L'application se présente sous forme d'une fenêtre moderne avec trois sections
 
 ---
 
-## 📦 Création d'un Exécutable
-
-### 🛠️ Avec PyInstaller
-
-Pour créer un fichier `.exe` portable :
-
-```bash
-# Installation de PyInstaller
-pip install pyinstaller
-
-# Création de l'exécutable
-pyinstaller --onefile --windowed --name="StarCitizen-CargoShare" main.py
-
-# L'exécutable sera dans le dossier dist/
-```
-
 ### ⚙️ Options avancées
 
 ```bash
@@ -175,8 +151,8 @@ pyinstaller --onefile --windowed \
 
 ### 💡 Algorithme de Répartition
 
-- **85% pour les investisseurs** (proportionnel à l'investissement)
-- **15% pour les non-investisseurs** (répartition équitable)
+- **95% à 70% pour les investisseurs** (proportionnel à l'investissement)
+- **5% à 30% pour les non-investisseurs** (répartition équitable)
 - **Vérification automatique** des totaux
 - **Gestion des cas limites** (divisions par zéro, etc.)
 
