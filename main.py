@@ -238,4 +238,31 @@ class CargoShareApp:
                 self.resultat_text.insert(tk.END, f"  {nom}:\n")
                 self.resultat_text.insert(tk.END, f"    - Investi: {m:,.2f} aUEC\n".replace(',', ' '))
                 self.resultat_text.insert(tk.END, f"    - Part du bénéfice: {part:,.2f} aUEC\n".replace(',', ' '))
-                self.resultat_text.insert(tk.END, f"    - TOTAL REÇU: {m + part:,.2f} a
+                self.resultat_text.insert(tk.END, f"    - TOTAL REÇU: {m + part:,.2f} aUEC\n".replace(',', ' '))
+
+        self.resultat_text.insert(tk.END, f"    - TOTAL REÇU: {m + part:,.2f} aUEC\n".replace(',', ' '))
+    if non_investisseurs:
+        self.resultat_text.insert(tk.END, f"\n👥 ÉQUIPIERS ({int(p_non*100)}%)\n")
+        self.resultat_text.insert(tk.END, "────────────────────────────────────────────────────────────────────\n")
+        for nom in non_investisseurs:
+            part = resultats.get(nom, 0)
+            self.resultat_text.insert(tk.END, f"  {nom}: \n")
+            self.resultat_text.insert(tk.END, f"    - Part du bénéfice: {part:,.2f} aUEC\n".replace(',', ' '))
+    # Historique
+    record = {
+        "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "benefice_total": int(benefice_total),
+        "cout_total": int(cout_total),
+        "revente_totale": int(revente_totale),
+        "percent_investisseurs": int(p_inv * 100),
+        "percent_equipiers": int(p_non * 100),
+        "parts": {nom: int(part) for nom, part in resultats.items()}
+    }
+    self.history.append(record)
+    self.save_history()
+    self.refresh_history_listbox()
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = CargoShareApp(root)
+    root.mainloop()
