@@ -200,6 +200,7 @@ class CargoShareApp:
 
     def calculer_parts(self):
         GAIN_MAX_RATIO = 5  # Plafond x la mise, modifie comme tu veux !
+        INVEST_BONUS_RATIO = 0.10  # 10% de bonus minimal sur équipier
         if not self.personnes:
             messagebox.showwarning("Attention", "Ajoutez au moins une personne.")
             return
@@ -259,13 +260,24 @@ class CargoShareApp:
                 if resultats[nom] > min_invest_total:
                     resultats[nom] = min_invest_total
                     correction_faite = True
+        # Bonus investisseur minimal : il doit avoir au moins +10% par rapport au meilleur équipier
+        if investisseurs and non_investisseurs:
+            max_equipier = max([resultats[n] for n in non_investisseurs])
+            min_bonus = max_equipier * INVEST_BONUS_RATIO
+            for nom_inv, montant in investisseurs.items():
+                total = montant + resultats[nom_inv]
+                if abs(total - max_equipier) < 1e-2 or total <= max_equipier:
+                    ajust = (max_equipier + min_bonus) - total
+                    if ajust > 0:
+                        resultats[nom_inv] += ajust
+                        correction_faite = True
 
         self.resultat_text.delete('1.0', tk.END)
         self.resultat_text.insert(tk.END, "════════════════════════════════════════════════════════════════════\n")
         self.resultat_text.insert(tk.END, f"BÉNÉFICE TOTAL: {benefice_total:,.2f} aUEC\n".replace(',', ' '))
         self.resultat_text.insert(tk.END, "════════════════════════════════════════════════════════════════════\n\n")
         if correction_faite:
-            self.resultat_text.insert(tk.END, "⚠️ Correction appliquée : équité investisseurs/équipiers & plafond rendement\n\n")
+            self.resultat_text.insert(tk.END, "⚠️ Correction appliquée : équité investisseurs/équipiers, plafond rendement et bonus investisseur +10%\n\n")
         if investisseurs:
             self.resultat_text.insert(tk.END, f"🚀 INVESTISSEURS ({int(p_inv*100)}%)\n")
             self.resultat_text.insert(tk.END, "────────────────────────────────────────────────────────────────────\n")
@@ -299,4 +311,3 @@ if __name__ == "__main__":
     root = tk.Tk()
     app = CargoShareApp(root)
     root.mainloop()
-
