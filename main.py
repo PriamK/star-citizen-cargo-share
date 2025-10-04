@@ -230,7 +230,7 @@ class CargoShareApp:
             for nom in non_investisseurs:
                 resultats[nom] = par_tete
 
-        # Correction équité : chaque investisseur doit recevoir au moins autant que le plus gros équipier
+        # Correction équité 1 : chaque investisseur doit recevoir au moins autant que le plus gros équipier
         max_equipier = max([resultats[n] for n in non_investisseurs], default=0)
         correction_faite = False
         for nom_inv, montant in investisseurs.items():
@@ -243,7 +243,7 @@ class CargoShareApp:
                     reduction_par_equipier = a_rajouter / len(non_investisseurs)
                     for nom_eq in non_investisseurs:
                         resultats[nom_eq] = max(0, resultats[nom_eq] - reduction_par_equipier)
-        # Plafond de gain : aucun investisseur ne peut dépasser GAIN_MAX_RATIO x sa mise
+        # Correction équité 2 : plafond de gain investisseur
         for nom_inv, montant in investisseurs.items():
             gain_total = montant + resultats[nom_inv]
             gain_max = montant * GAIN_MAX_RATIO
@@ -252,6 +252,14 @@ class CargoShareApp:
                 resultats[nom_inv] -= surplus
                 correction_faite = True
                 self.resultat_text.insert(tk.END, f"⚠️ Gain plafonné à {GAIN_MAX_RATIO}x la mise pour {nom_inv}\n")
+        # Correction équité 3 : aucun équipier ne doit dépasser le plus petit investisseur
+        if investisseurs and non_investisseurs:
+            min_invest_total = min([m + resultats[n] for n, m in investisseurs.items()])
+            for nom in non_investisseurs:
+                if resultats[nom] > min_invest_total:
+                    resultats[nom] = min_invest_total
+                    correction_faite = True
+
         self.resultat_text.delete('1.0', tk.END)
         self.resultat_text.insert(tk.END, "════════════════════════════════════════════════════════════════════\n")
         self.resultat_text.insert(tk.END, f"BÉNÉFICE TOTAL: {benefice_total:,.2f} aUEC\n".replace(',', ' '))
@@ -291,3 +299,4 @@ if __name__ == "__main__":
     root = tk.Tk()
     app = CargoShareApp(root)
     root.mainloop()
+
