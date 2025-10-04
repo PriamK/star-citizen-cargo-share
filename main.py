@@ -4,9 +4,9 @@ import json
 import os
 from datetime import datetime
 
-HISTORY_FILE = "trade_history.json"
+HISTORY_FILE = os.path.join(os.path.dirname(__file__), "trade_history.json")
 
-# Crée le fichier s'il n'existe pas
+# Création automatique du fichier historique si besoin
 if not os.path.exists(HISTORY_FILE):
     try:
         with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
@@ -19,68 +19,52 @@ class CargoShareApp:
         self.root = root
         self.root.title("🚀 Star Citizen - Calculateur de Parts Cargo")
         self.root.geometry("900x980")
-
-        # Couleurs thème Star Citizen
         self.bg_color = "#0a1628"
         self.fg_color = "#00d9ff"
         self.button_color = "#1a3a52"
         self.text_color = "#e0f7fa"
         self.panel_color = "#0f2138"
         self.root.configure(bg=self.bg_color)
-        
-        # Données
-        self.personnes = {}  # nom -> montant investi (0 si équipier)
-        self.percent_equipier = tk.IntVar(value=15)  # pourcentage pour non-investisseurs
+        self.personnes = {}
+        self.percent_equipier = tk.IntVar(value=15)
         self.history = self.load_history()
-        
-        # Frame pour les personnes
+        # Frames
         frame_personnes = tk.Frame(root, bg=self.panel_color, padx=20, pady=20, bd=1, relief=tk.GROOVE)
         frame_personnes.pack(fill=tk.X, padx=16, pady=(16, 10))
         title_label = tk.Label(frame_personnes, text="👨‍🚀 GESTION DES PERSONNES",
                               font=("Segoe UI", 14, "bold"), bg=self.panel_color, fg=self.fg_color)
         title_label.grid(row=0, column=0, columnspan=8, sticky="w", pady=(0, 10))
-
         tk.Label(frame_personnes, text="Nom:", bg=self.panel_color, fg=self.text_color, font=("Segoe UI", 10)).grid(row=1, column=0, sticky="w")
         self.nom_entry = tk.Entry(frame_personnes, width=24, font=("Segoe UI", 10))
         self.nom_entry.grid(row=1, column=1, padx=(6, 18), pady=4, sticky="w")
-        
         tk.Label(frame_personnes, text="Montant investi (0 = équipier):", bg=self.panel_color, fg=self.text_color, font=("Segoe UI", 10)).grid(row=1, column=2, sticky="w")
         self.montant_entry = tk.Entry(frame_personnes, width=18, font=("Segoe UI", 10))
         self.montant_entry.grid(row=1, column=3, padx=(6, 18), pady=4, sticky="w")
-
         btn_ajouter = tk.Button(frame_personnes, text="➕ Ajouter", command=self.ajouter_personne,
                                bg=self.button_color, fg=self.fg_color, font=("Segoe UI", 10, "bold"),
                                cursor="hand2", relief=tk.RAISED)
         btn_ajouter.grid(row=1, column=4, padx=(0, 8))
-
         tk.Label(frame_personnes, text="Supprimer:", bg=self.panel_color, fg=self.text_color, font=("Segoe UI", 10)).grid(row=2, column=0, sticky="w", pady=(10,0))
         self.combo_supprimer = ttk.Combobox(frame_personnes, state="readonly", width=22, values=[])
         self.combo_supprimer.grid(row=2, column=1, padx=(6, 18), pady=(10,0), sticky="w")
-        
         btn_supprimer = tk.Button(frame_personnes, text="🗑️ Supprimer", command=self.supprimer_selection,
                                  bg="#742a2a", fg="#ffecec", font=("Segoe UI", 10, "bold"), cursor="hand2")
         btn_supprimer.grid(row=2, column=2, pady=(10,0), sticky="w")
-
         self.liste_label = tk.Label(frame_personnes, text="", bg=self.panel_color, fg=self.text_color,
                                    font=("Consolas", 9), justify=tk.LEFT)
         self.liste_label.grid(row=3, column=0, columnspan=8, sticky="w", pady=(12,0))
-
-        # Frame pour calcul et paramètres
         frame_calcul = tk.Frame(root, bg=self.panel_color, padx=20, pady=20, bd=1, relief=tk.GROOVE)
         frame_calcul.pack(fill=tk.X, padx=16, pady=10)
         calc_title = tk.Label(frame_calcul, text="💰 CALCUL DE RÉPARTITION",
                              font=("Segoe UI", 14, "bold"), bg=self.panel_color, fg=self.fg_color)
         calc_title.grid(row=0, column=0, columnspan=8, sticky="w", pady=(0, 10))
-
         tk.Label(frame_calcul, text="Coût total cargo (aUEC):", bg=self.panel_color, fg=self.text_color, font=("Segoe UI", 10)).grid(row=1, column=0, sticky="w")
         self.cout_entry = tk.Entry(frame_calcul, width=18, font=("Segoe UI", 10))
         self.cout_entry.grid(row=1, column=1, padx=(6, 24), pady=4, sticky="w")
         self.cout_entry.bind('<KeyRelease>', self.update_cout_total)
-
         tk.Label(frame_calcul, text="Revente totale (aUEC):", bg=self.panel_color, fg=self.text_color, font=("Segoe UI", 10)).grid(row=1, column=2, sticky="w")
         self.revente_entry = tk.Entry(frame_calcul, width=18, font=("Segoe UI", 10))
         self.revente_entry.grid(row=1, column=3, padx=(6, 24), pady=4, sticky="w")
-
         tk.Label(frame_calcul, text="% Équipiers (non-investisseurs):", bg=self.panel_color, fg=self.text_color, font=("Segoe UI", 10, "bold")).grid(row=2, column=0, sticky="w", pady=(10, 0))
         self.scale_equipier = tk.Scale(frame_calcul, from_=5, to=30, orient=tk.HORIZONTAL, variable=self.percent_equipier,
                                        length=240, bg=self.panel_color, fg=self.text_color, troughcolor="#123456",
@@ -93,8 +77,6 @@ class CargoShareApp:
                                  fg=self.fg_color, font=("Segoe UI", 10, "bold"),
                                  cursor="hand2", relief=tk.RAISED)
         btn_calculer.grid(row=3, column=0, columnspan=4, pady=12, sticky="w")
-
-        # Frame pour résultats + historique
         container = tk.Frame(root, bg=self.bg_color)
         container.pack(fill=tk.BOTH, expand=True, padx=16, pady=(10, 16))
         frame_resultats = tk.Frame(container, bg=self.panel_color, padx=20, pady=12, bd=1, relief=tk.GROOVE)
@@ -115,13 +97,9 @@ class CargoShareApp:
                                       font=("Consolas", 9))
         self.history_list.pack(fill=tk.BOTH, expand=True, pady=(6,0))
         self.refresh_history_listbox()
-        
-        # Ajuste colonnes
         for c in range(8):
             frame_personnes.grid_columnconfigure(c, weight=0)
             frame_calcul.grid_columnconfigure(c, weight=0)
-        
-        # Style ttk
         try:
             style = ttk.Style()
             try:
@@ -145,7 +123,6 @@ class CargoShareApp:
             self.combo_supprimer.set("")
 
     def update_cout_total(self, event=None):
-        """Calcule automatiquement le coût total basé sur les investissements"""
         total = sum(self.personnes.values())
         self.cout_entry.delete(0, tk.END)
         self.cout_entry.insert(0, str(int(total)))
@@ -211,7 +188,7 @@ class CargoShareApp:
 
     def refresh_history_listbox(self):
         self.history_list.delete(0, tk.END)
-        for item in self.history[-10:][::-1]:  # derniers d'abord
+        for item in self.history[-10:][::-1]:
             header = f"[{item['date']}] Benef: {item['benefice_total']:,} aUEC | Inv:{item['percent_investisseurs']}% Eq:{item['percent_equipiers']}%".replace(',', ' ')
             self.history_list.insert(tk.END, header)
             self.history_list.insert(tk.END, f" Coût: {item['cout_total']:,} | Revente: {item['revente_totale']:,}".replace(',', ' '))
@@ -237,7 +214,6 @@ class CargoShareApp:
         investisseurs = {nom: m for nom, m in self.personnes.items() if m > 0}
         non_investisseurs = [nom for nom, m in self.personnes.items() if m == 0]
         resultats = {}
-        # Pourcentages dynamiques
         p_non = max(5, min(30, self.percent_equipier.get())) / 100.0
         p_inv = 1.0 - p_non
         if investisseurs:
@@ -251,11 +227,21 @@ class CargoShareApp:
             par_tete = part_non / len(non_investisseurs)
             for nom in non_investisseurs:
                 resultats[nom] = par_tete
-        # Output résultats
+        # Correction pour garantir qu'aucun investisseur ne gagne moins qu'un équipier
+        max_equipier = max([resultats[n] for n in non_investisseurs], default=0)
+        correction_faite = False
+        for nom, m in investisseurs.items():
+            part = resultats[nom]
+            total_recu = m + part
+            if total_recu < max_equipier:
+                resultats[nom] = max_equipier - m
+                correction_faite = True
         self.resultat_text.delete('1.0', tk.END)
         self.resultat_text.insert(tk.END, "════════════════════════════════════════════════════════════════════\n")
         self.resultat_text.insert(tk.END, f"BÉNÉFICE TOTAL: {benefice_total:,.2f} aUEC\n".replace(',', ' '))
         self.resultat_text.insert(tk.END, "════════════════════════════════════════════════════════════════════\n\n")
+        if correction_faite:
+            self.resultat_text.insert(tk.END, "⚠️ Correction appliquée : aucun investisseur ne reçoit moins qu'un équipier\n\n")
         if investisseurs:
             self.resultat_text.insert(tk.END, f"🚀 INVESTISSEURS ({int(p_inv*100)}%)\n")
             self.resultat_text.insert(tk.END, "────────────────────────────────────────────────────────────────────\n")
@@ -272,7 +258,6 @@ class CargoShareApp:
                 part = resultats.get(nom, 0)
                 self.resultat_text.insert(tk.END, f" {nom}: \n")
                 self.resultat_text.insert(tk.END, f" - Part du bénéfice: {part:,.2f} aUEC\n".replace(',', ' '))
-        # Historique
         record = {
             "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
             "benefice_total": int(benefice_total),
@@ -290,4 +275,3 @@ if __name__ == "__main__":
     root = tk.Tk()
     app = CargoShareApp(root)
     root.mainloop()
-
