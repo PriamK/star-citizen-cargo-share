@@ -6,6 +6,14 @@ from datetime import datetime
 
 HISTORY_FILE = "trade_history.json"
 
+# Crée le fichier s'il n'existe pas
+if not os.path.exists(HISTORY_FILE):
+    try:
+        with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
+            f.write("[]")
+    except Exception as e:
+        print("Erreur de création du fichier d'historique :", e)
+
 class CargoShareApp:
     def __init__(self, root):
         self.root = root
