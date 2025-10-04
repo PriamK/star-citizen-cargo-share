@@ -65,7 +65,7 @@ class CargoShareApp:
         tk.Label(frame_calcul, text="Revente totale (aUEC):", bg=self.panel_color, fg=self.text_color, font=("Segoe UI", 10)).grid(row=1, column=2, sticky="w")
         self.revente_entry = tk.Entry(frame_calcul, width=18, font=("Segoe UI", 10))
         self.revente_entry.grid(row=1, column=3, padx=(6, 24), pady=4, sticky="w")
-        tk.Label(frame_calcul, text="% Équipiers (non-investisseurs):", bg=self.panel_color, fg=self.text_color, font=("Segoe UI", 10, "bold")).grid(row=2, column=0, sticky="w", pady=(10, 0))
+        tk.Label(frame_calcul, text="% Répartition collective:", bg=self.panel_color, fg=self.text_color, font=("Segoe UI", 10, "bold")).grid(row=2, column=0, sticky="w", pady=(10, 0))
         self.scale_equipier = tk.Scale(frame_calcul, from_=5, to=30, orient=tk.HORIZONTAL, variable=self.percent_equipier,
                                        length=240, bg=self.panel_color, fg=self.text_color, troughcolor="#123456",
                                        highlightthickness=0, sliderrelief=tk.RAISED, command=self.on_percent_change)
@@ -190,7 +190,7 @@ class CargoShareApp:
     def refresh_history_listbox(self):
         self.history_list.delete(0, tk.END)
         for item in self.history[-10:][::-1]:
-            header = f"[{item['date']}] Benef: {item['benefice_total']:,} aUEC | Inv:{item['percent_investisseurs']}% Eq:{item['percent_equipiers']}%".replace(',', ' ')
+            header = f"[{item['date']}] Benef: {item['benefice_total']:,} aUEC | Inv:{item['percent_investisseurs']}%  Collective:{item['percent_equipiers']}%".replace(',', ' ')
             self.history_list.insert(tk.END, header)
             self.history_list.insert(tk.END, f" Coût: {item['cout_total']:,} | Revente: {item['revente_totale']:,}".replace(',', ' '))
             self.history_list.insert(tk.END, " Acteurs:")
@@ -199,8 +199,7 @@ class CargoShareApp:
             self.history_list.insert(tk.END, "")
 
     def calculer_parts(self):
-        GAIN_MAX_RATIO = 5
-        INVEST_BONUS_RATIO = 0.10
+        # Répartition mixte 15% collectif
         if not self.personnes:
             messagebox.showwarning("Attention", "Ajoutez au moins une personne.")
             return
@@ -214,100 +213,64 @@ class CargoShareApp:
             messagebox.showwarning("Attention", "La revente doit être supérieure au coût pour avoir un bénéfice.")
             return
         benefice_total = revente_totale - cout_total
+        membres = list(self.personnes.keys())
         investisseurs = {nom: m for nom, m in self.personnes.items() if m > 0}
         non_investisseurs = [nom for nom, m in self.personnes.items() if m == 0]
         resultats = {}
-        p_non = max(5, min(30, self.percent_equipier.get())) / 100.0
-        p_inv = 1.0 - p_non
-        if investisseurs:
-            total_investi = sum(investisseurs.values())
-            part_investisseurs = benefice_total * p_inv
-            for nom, m in investisseurs.items():
-                proportion = (m / total_investi) if total_investi > 0 else 0
-                resultats[nom] = part_investisseurs * proportion
-        if non_investisseurs:
-            part_non = benefice_total * p_non
-            par_tete = part_non / len(non_investisseurs)
-            for nom in non_investisseurs:
-                resultats[nom] = par_tete
-
-        # Correction équité 1 : chaque investisseur doit recevoir au moins autant que le plus gros équipier
-        max_equipier = max([resultats[n] for n in non_investisseurs], default=0)
-        correction_faite = False
-        for nom_inv, montant in investisseurs.items():
-            total_inv = montant + resultats[nom_inv]
-            if total_inv < max_equipier:
-                a_rajouter = max_equipier - total_inv
-                resultats[nom_inv] += a_rajouter
-                correction_faite = True
-                if non_investisseurs:
-                    reduction_par_equipier = a_rajouter / len(non_investisseurs)
-                    for nom_eq in non_investisseurs:
-                        resultats[nom_eq] = max(0, resultats[nom_eq] - reduction_par_equipier)
-        # Correction équité 2 : plafond
-        for nom_inv, montant in investisseurs.items():
-            gain_total = montant + resultats[nom_inv]
-            gain_max = montant * GAIN_MAX_RATIO
-            if gain_total > gain_max:
-                surplus = gain_total - gain_max
-                resultats[nom_inv] -= surplus
-                correction_faite = True
-                self.resultat_text.insert(tk.END, f"⚠️ Gain plafonné à {GAIN_MAX_RATIO}x la mise pour {nom_inv}\n")
-        # Correction équité 3 : aucun équipier ne doit dépasser le plus petit investisseur
-        if investisseurs and non_investisseurs:
-            min_invest_total = min([m + resultats[n] for n, m in investisseurs.items()])
-            for nom in non_investisseurs:
-                if resultats[nom] > min_invest_total:
-                    resultats[nom] = min_invest_total
-                    correction_faite = True
-        # Bonus investisseur minimal : +10% par rapport au meilleur équipier
-        if investisseurs and non_investisseurs:
-            max_equipier = max([resultats[n] for n in non_investisseurs])
-            min_bonus = max_equipier * INVEST_BONUS_RATIO
-            for nom_inv, montant in investisseurs.items():
-                total = montant + resultats[nom_inv]
-                if abs(total - max_equipier) < 1e-2 or total <= max_equipier:
-                    ajust = (max_equipier + min_bonus) - total
-                    if ajust > 0:
-                        resultats[nom_inv] += ajust
-                        correction_faite = True
-
-        # Normalisation finale : on s'assure que la somme des parts = bénéfice total
+        p_collectif = max(5, min(30, self.percent_equipier.get())) / 100.0
+        p_invest = 1.0 - p_collectif
+        # Calcul part collective
+        part_collective = benefice_total * p_collectif
+        partage_collectif = part_collective / len(membres)
+        # Calcul part investisseur
+        part_investisseur = benefice_total * p_invest
+        somme_investie = sum(investisseurs.values())
+        # Attribution
+        for nom in membres:
+            resultats[nom] = partage_collectif
+        for nom, montant in investisseurs.items():
+            proportion = (montant / somme_investie) if somme_investie > 0 else 0
+            resultats[nom] += part_investisseur * proportion
+        # Normalisation finale
         somme_parts = sum(resultats.values())
         if abs(somme_parts - benefice_total) > 1:
             ratio = benefice_total / somme_parts
             for k in resultats:
                 resultats[k] *= ratio
-
+        # Affichage
         self.resultat_text.delete('1.0', tk.END)
         self.resultat_text.insert(tk.END, "════════════════════════════════════════════════════════════════════\n")
         self.resultat_text.insert(tk.END, f"BÉNÉFICE TOTAL: {benefice_total:,.2f} aUEC\n".replace(',', ' '))
         self.resultat_text.insert(tk.END, "════════════════════════════════════════════════════════════════════\n\n")
-        if correction_faite:
-            self.resultat_text.insert(tk.END, "⚠️ Corrections appliquées : équité, plafond, bonus investisseur +10% et normalisation\n\n")
+        self.resultat_text.insert(tk.END, f"🏆 RÉPARTITION COLLECTIVE ({int(p_collectif * 100)}% distribué à tous)\n")
+        self.resultat_text.insert(tk.END, "────────────────────────────────────────────────────────────────────\n")
+        self.resultat_text.insert(tk.END, f"Part de base par membre : {partage_collectif:,.2f} aUEC\n\n".replace(',', ' '))
         if investisseurs:
-            self.resultat_text.insert(tk.END, f"🚀 INVESTISSEURS ({int(p_inv*100)}%)\n")
+            self.resultat_text.insert(tk.END, f"🚀 INVESTISSEURS ({int(p_invest*100)}% du bénéfice selon investissement)\n")
             self.resultat_text.insert(tk.END, "────────────────────────────────────────────────────────────────────\n")
-            for nom, m in investisseurs.items():
-                part = resultats.get(nom, 0)
+            for nom, montant in investisseurs.items():
+                base = partage_collectif
+                bonus = resultats[nom] - base
                 self.resultat_text.insert(tk.END, f" {nom}:\n")
-                self.resultat_text.insert(tk.END, f" - Investi: {m:,.2f} aUEC\n".replace(',', ' '))
-                self.resultat_text.insert(tk.END, f" - Part du bénéfice: {part:,.2f} aUEC\n".replace(',', ' '))
-                self.resultat_text.insert(tk.END, f" - TOTAL REÇU: {m + part:,.2f} aUEC\n".replace(',', ' '))
+                self.resultat_text.insert(tk.END, f" - Investi: {montant:,.2f} aUEC\n".replace(',', ' '))
+                self.resultat_text.insert(tk.END, f" - Part collective: {base:,.2f} aUEC\n".replace(',', ' '))
+                self.resultat_text.insert(tk.END, f" - Part bonus investisseur: {bonus:,.2f} aUEC\n".replace(',', ' '))
+                self.resultat_text.insert(tk.END, f" - TOTAL REÇU: {resultats[nom]:,.2f} aUEC\n".replace(',', ' '))
         if non_investisseurs:
-            self.resultat_text.insert(tk.END, f"\n👥 ÉQUIPIERS ({int(p_non*100)}%)\n")
+            self.resultat_text.insert(tk.END, f"\n👥 ÉQUIPIERS\n")
             self.resultat_text.insert(tk.END, "────────────────────────────────────────────────────────────────────\n")
             for nom in non_investisseurs:
-                part = resultats.get(nom, 0)
+                base = partage_collectif
                 self.resultat_text.insert(tk.END, f" {nom}: \n")
-                self.resultat_text.insert(tk.END, f" - Part du bénéfice: {part:,.2f} aUEC\n".replace(',', ' '))
+                self.resultat_text.insert(tk.END, f" - Part collective: {base:,.2f} aUEC\n".replace(',', ' '))
+                self.resultat_text.insert(tk.END, f" - TOTAL REÇU: {resultats[nom]:,.2f} aUEC\n".replace(',', ' '))
         record = {
             "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
             "benefice_total": int(benefice_total),
             "cout_total": int(cout_total),
             "revente_totale": int(revente_totale),
-            "percent_investisseurs": int(p_inv * 100),
-            "percent_equipiers": int(p_non * 100),
+            "percent_investisseurs": int(p_invest * 100),
+            "percent_equipiers": int(p_collectif * 100),
             "parts": {nom: int(part) for nom, part in resultats.items()}
         }
         self.history.append(record)
