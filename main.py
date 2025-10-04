@@ -60,7 +60,7 @@ class CargoShareApp:
                  bg=self.panel_color, fg=self.text_color, font=("Segoe UI", 10)).grid(row=1, column=0, sticky="w")
         self.cout_entry = tk.Entry(frame_calcul, width=18, font=("Segoe UI", 10))
         self.cout_entry.grid(row=1, column=1, padx=(6, 24), pady=4, sticky="w")
-        self.cout_entry.bind('<keyrelease>', self.update_cout_total)
+        self.cout_entry.bind('<KeyRelease>', self.update_cout_total)
         tk.Label(frame_calcul, text="Revente totale (aUEC):",
                  bg=self.panel_color, fg=self.text_color, font=("Segoe UI", 10)).grid(row=1, column=2, sticky="w")
         self.revente_entry = tk.Entry(frame_calcul, width=18, font=("Segoe UI", 10))
