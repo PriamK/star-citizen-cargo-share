@@ -199,12 +199,6 @@ class CargoShareApp:
             self.history_list.insert(tk.END, "")
 
     def calculer_parts(self):
-        """
-        Formule mathématique parfaite :
-        - Part collective (α%) : (α × T) / n
-        - Part investissement ((1-α)%) : ((1-α) × T) × (investissement_individuel / somme_investie)
-        - Total = Part collective + Part investissement
-        """
         if not self.personnes:
             messagebox.showwarning("Attention", "Ajoutez au moins une personne.")
             return
@@ -221,64 +215,66 @@ class CargoShareApp:
         T = revente_totale - cout_total  # Bénéfice total
         n = len(self.personnes)  # Nombre total de membres
         alpha = max(10, min(40, self.percent_collectif.get())) / 100.0  # α en décimal
-        
+
         investisseurs = {nom: m for nom, m in self.personnes.items() if m > 0}
         non_investisseurs = [nom for nom, m in self.personnes.items() if m == 0]
         somme_investie = sum(investisseurs.values())
-        
+
         resultats = {}
-        
+
         # Calcul part collective : (α × T) / n
         part_collective_par_personne = (alpha * T) / n
-        
+
         # Calcul part investissement : (1-α) × T
         part_investissement_totale = (1 - alpha) * T
-        
+
         # Attribution des parts
         for nom in self.personnes.keys():
             # Tout le monde reçoit la part collective
             resultats[nom] = part_collective_par_personne
-            
+
             # Les investisseurs reçoivent en plus leur part proportionnelle
             if nom in investisseurs and somme_investie > 0:
                 proportion = investisseurs[nom] / somme_investie
                 resultats[nom] += part_investissement_totale * proportion
-        
+
         # Vérification : somme = bénéfice total (normalisation si nécessaire)
         somme_parts = sum(resultats.values())
         if abs(somme_parts - T) > 1:
             ratio = T / somme_parts
             for k in resultats:
                 resultats[k] *= ratio
-        
+
         # Affichage des résultats
         self.resultat_text.delete('1.0', tk.END)
         self.resultat_text.insert(tk.END, "════════════════════════════════════════════════════════════════════\n")
         self.resultat_text.insert(tk.END, f"BÉNÉFICE TOTAL (T): {T:,.2f} aUEC\n".replace(',', ' '))
         self.resultat_text.insert(tk.END, f"MEMBRES (n): {n} | PART COLLECTIVE (α): {int(alpha*100)}%\n")
         self.resultat_text.insert(tk.END, "════════════════════════════════════════════════════════════════════\n\n")
-        
+
         self.resultat_text.insert(tk.END, f"🏆 PART COLLECTIVE ({int(alpha*100)}%)\n")
         self.resultat_text.insert(tk.END, "────────────────────────────────────────────────────────────────────\n")
         self.resultat_text.insert(tk.END, f"Formule : (α × T) / n = ({alpha:.2f} × {T:,.0f}) / {n}\n".replace(',', ' '))
         self.resultat_text.insert(tk.END, f"Part par personne : {part_collective_par_personne:,.2f} aUEC\n\n".replace(',', ' '))
-        
+
         if investisseurs:
             self.resultat_text.insert(tk.END, f"🚀 PART INVESTISSEMENT ({int((1-alpha)*100)}%)\n")
             self.resultat_text.insert(tk.END, "────────────────────────────────────────────────────────────────────\n")
             self.resultat_text.insert(tk.END, f"Formule : (1-α) × T = {1-alpha:.2f} × {T:,.0f} = {part_investissement_totale:,.2f} aUEC\n\n".replace(',', ' '))
-            
+
             for nom, montant in investisseurs.items():
                 part_collective = part_collective_par_personne
                 part_invest = resultats[nom] - part_collective
                 proportion = (montant / somme_investie) * 100 if somme_investie > 0 else 0
-                
+
                 self.resultat_text.insert(tk.END, f" {nom} (investissement : {proportion:.1f}%) :\n")
                 self.resultat_text.insert(tk.END, f" - Investi : {montant:,.2f} aUEC\n".replace(',', ' '))
                 self.resultat_text.insert(tk.END, f" - Part collective : {part_collective:,.2f} aUEC\n".replace(',', ' '))
                 self.resultat_text.insert(tk.END, f" - Part investissement : {part_invest:,.2f} aUEC\n".replace(',', ' '))
-                self.resultat_text.insert(tk.END, f" - TOTAL REÇU : {resultats[nom]:,.2f} aUEC\n\n".replace(',', ' '))
-        
+                self.resultat_text.insert(tk.END, f" - TOTAL REÇU (bénéfice) : {resultats[nom]:,.2f} aUEC\n".replace(',', ' '))
+                total_net = resultats[nom] + montant
+                self.resultat_text.insert(tk.END, f" - TOTAL NET (avec investissement) : {total_net:,.2f} aUEC\n\n".replace(',', ' '))
+
         if non_investisseurs:
             self.resultat_text.insert(tk.END, f"👥 ÉQUIPIERS\n")
             self.resultat_text.insert(tk.END, "────────────────────────────────────────────────────────────────────\n")
@@ -287,7 +283,7 @@ class CargoShareApp:
                 self.resultat_text.insert(tk.END, f" {nom} :\n")
                 self.resultat_text.insert(tk.END, f" - Part collective : {part_collective:,.2f} aUEC\n".replace(',', ' '))
                 self.resultat_text.insert(tk.END, f" - TOTAL REÇU : {resultats[nom]:,.2f} aUEC\n\n".replace(',', ' '))
-        
+
         # Sauvegarde dans l'historique
         record = {
             "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
