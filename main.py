@@ -78,10 +78,16 @@ class CargoShareApp:
                                  cursor="hand2", relief=tk.RAISED)
         btn_calculer.grid(row=3, column=0, columnspan=4, pady=12, sticky="w")
 
-        container = tk.Frame(root, bg=self.bg_color)
+        # --- NOUVEAU: PanedWindow horizontal pour rendu dynamique ---
+        container = tk.PanedWindow(root, orient=tk.HORIZONTAL, sashrelief=tk.RAISED, bg=self.bg_color)
         container.pack(fill=tk.BOTH, expand=True, padx=16, pady=(10, 16))
+
         frame_resultats = tk.Frame(container, bg=self.panel_color, padx=20, pady=12, bd=1, relief=tk.GROOVE)
-        frame_resultats.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        frame_history = tk.Frame(container, bg=self.panel_color, padx=14, pady=12, bd=1, relief=tk.GROOVE)
+
+        container.add(frame_resultats, minsize=400, stretch="always")
+        container.add(frame_history, minsize=300, stretch="always")
+
         result_title = tk.Label(frame_resultats, text="📊 RÉSULTATS",
                                font=("Segoe UI", 14, "bold"), bg=self.panel_color, fg=self.fg_color)
         result_title.pack(pady=(0,10), anchor="w")
@@ -89,8 +95,7 @@ class CargoShareApp:
                                     font=("Consolas", 10), bg="#051020",
                                     fg=self.text_color, relief=tk.SUNKEN, bd=2)
         self.resultat_text.pack(fill=tk.BOTH, expand=True)
-        frame_history = tk.Frame(container, bg=self.panel_color, padx=14, pady=12, bd=1, relief=tk.GROOVE)
-        frame_history.pack(side=tk.RIGHT, fill=tk.Y)
+
         history_title = tk.Label(frame_history, text="🗂️ Historique (10 derniers)",
                                  font=("Segoe UI", 12, "bold"), bg=self.panel_color, fg=self.fg_color)
         history_title.pack(anchor="w")
