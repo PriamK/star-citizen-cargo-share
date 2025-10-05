@@ -25,7 +25,7 @@ class CargoShareApp:
         self.panel_color = "#0f2138"
         self.root.configure(bg=self.bg_color)
         self.personnes = {}
-        self.percent_equipier = tk.IntVar(value=15)
+        self.percent_collectif = tk.IntVar(value=25)
         self.history = self.load_history()
 
         frame_personnes = tk.Frame(root, bg=self.panel_color, padx=20, pady=20, bd=1, relief=tk.GROOVE)
@@ -65,12 +65,12 @@ class CargoShareApp:
         tk.Label(frame_calcul, text="Revente totale (aUEC):", bg=self.panel_color, fg=self.text_color, font=("Segoe UI", 10)).grid(row=1, column=2, sticky="w")
         self.revente_entry = tk.Entry(frame_calcul, width=18, font=("Segoe UI", 10))
         self.revente_entry.grid(row=1, column=3, padx=(6, 24), pady=4, sticky="w")
-        tk.Label(frame_calcul, text="% Répartition collective:", bg=self.panel_color, fg=self.text_color, font=("Segoe UI", 10, "bold")).grid(row=2, column=0, sticky="w", pady=(10, 0))
-        self.scale_equipier = tk.Scale(frame_calcul, from_=5, to=30, orient=tk.HORIZONTAL, variable=self.percent_equipier,
+        tk.Label(frame_calcul, text="% Part collective (α):", bg=self.panel_color, fg=self.text_color, font=("Segoe UI", 10, "bold")).grid(row=2, column=0, sticky="w", pady=(10, 0))
+        self.scale_collectif = tk.Scale(frame_calcul, from_=10, to=40, orient=tk.HORIZONTAL, variable=self.percent_collectif,
                                        length=240, bg=self.panel_color, fg=self.text_color, troughcolor="#123456",
                                        highlightthickness=0, sliderrelief=tk.RAISED, command=self.on_percent_change)
-        self.scale_equipier.grid(row=2, column=1, padx=(6, 24), pady=(10, 0), sticky="w")
-        self.label_percent = tk.Label(frame_calcul, text="15%", bg=self.panel_color, fg=self.fg_color, font=("Segoe UI", 10, "bold"))
+        self.scale_collectif.grid(row=2, column=1, padx=(6, 24), pady=(10, 0), sticky="w")
+        self.label_percent = tk.Label(frame_calcul, text="25%", bg=self.panel_color, fg=self.fg_color, font=("Segoe UI", 10, "bold"))
         self.label_percent.grid(row=2, column=2, sticky="w", pady=(10,0))
         btn_calculer = tk.Button(frame_calcul, text="🧮 Calculer les Parts",
                                  command=self.calculer_parts, bg=self.button_color,
@@ -115,7 +115,7 @@ class CargoShareApp:
         try:
             v = int(float(value))
         except Exception:
-            v = self.percent_equipier.get()
+            v = self.percent_collectif.get()
         self.label_percent.config(text=f"{v}%")
 
     def sync_combo(self):
@@ -190,7 +190,7 @@ class CargoShareApp:
     def refresh_history_listbox(self):
         self.history_list.delete(0, tk.END)
         for item in self.history[-10:][::-1]:
-            header = f"[{item['date']}] Benef: {item['benefice_total']:,} aUEC | Inv:{item['percent_investisseurs']}%  Collective:{item['percent_equipiers']}%".replace(',', ' ')
+            header = f"[{item['date']}] Benef: {item['benefice_total']:,} aUEC | Collectif:{item['percent_collectif']}% Invest:{item['percent_investissement']}%".replace(',', ' ')
             self.history_list.insert(tk.END, header)
             self.history_list.insert(tk.END, f" Coût: {item['cout_total']:,} | Revente: {item['revente_totale']:,}".replace(',', ' '))
             self.history_list.insert(tk.END, " Acteurs:")
@@ -199,7 +199,12 @@ class CargoShareApp:
             self.history_list.insert(tk.END, "")
 
     def calculer_parts(self):
-        # Répartition mixte 15% collectif
+        """
+        Formule mathématique parfaite :
+        - Part collective (α%) : (α × T) / n
+        - Part investissement ((1-α)%) : ((1-α) × T) × (investissement_individuel / somme_investie)
+        - Total = Part collective + Part investissement
+        """
         if not self.personnes:
             messagebox.showwarning("Attention", "Ajoutez au moins une personne.")
             return
@@ -212,65 +217,85 @@ class CargoShareApp:
         if revente_totale <= cout_total:
             messagebox.showwarning("Attention", "La revente doit être supérieure au coût pour avoir un bénéfice.")
             return
-        benefice_total = revente_totale - cout_total
-        membres = list(self.personnes.keys())
+        # Variables de base
+        T = revente_totale - cout_total  # Bénéfice total
+        n = len(self.personnes)  # Nombre total de membres
+        alpha = max(10, min(40, self.percent_collectif.get())) / 100.0  # α en décimal
+        
         investisseurs = {nom: m for nom, m in self.personnes.items() if m > 0}
         non_investisseurs = [nom for nom, m in self.personnes.items() if m == 0]
-        resultats = {}
-        p_collectif = max(5, min(30, self.percent_equipier.get())) / 100.0
-        p_invest = 1.0 - p_collectif
-        # Calcul part collective
-        part_collective = benefice_total * p_collectif
-        partage_collectif = part_collective / len(membres)
-        # Calcul part investisseur
-        part_investisseur = benefice_total * p_invest
         somme_investie = sum(investisseurs.values())
-        # Attribution
-        for nom in membres:
-            resultats[nom] = partage_collectif
-        for nom, montant in investisseurs.items():
-            proportion = (montant / somme_investie) if somme_investie > 0 else 0
-            resultats[nom] += part_investisseur * proportion
-        # Normalisation finale
+        
+        resultats = {}
+        
+        # Calcul part collective : (α × T) / n
+        part_collective_par_personne = (alpha * T) / n
+        
+        # Calcul part investissement : (1-α) × T
+        part_investissement_totale = (1 - alpha) * T
+        
+        # Attribution des parts
+        for nom in self.personnes.keys():
+            # Tout le monde reçoit la part collective
+            resultats[nom] = part_collective_par_personne
+            
+            # Les investisseurs reçoivent en plus leur part proportionnelle
+            if nom in investisseurs and somme_investie > 0:
+                proportion = investisseurs[nom] / somme_investie
+                resultats[nom] += part_investissement_totale * proportion
+        
+        # Vérification : somme = bénéfice total (normalisation si nécessaire)
         somme_parts = sum(resultats.values())
-        if abs(somme_parts - benefice_total) > 1:
-            ratio = benefice_total / somme_parts
+        if abs(somme_parts - T) > 1:
+            ratio = T / somme_parts
             for k in resultats:
                 resultats[k] *= ratio
-        # Affichage
+        
+        # Affichage des résultats
         self.resultat_text.delete('1.0', tk.END)
         self.resultat_text.insert(tk.END, "════════════════════════════════════════════════════════════════════\n")
-        self.resultat_text.insert(tk.END, f"BÉNÉFICE TOTAL: {benefice_total:,.2f} aUEC\n".replace(',', ' '))
+        self.resultat_text.insert(tk.END, f"BÉNÉFICE TOTAL (T): {T:,.2f} aUEC\n".replace(',', ' '))
+        self.resultat_text.insert(tk.END, f"MEMBRES (n): {n} | PART COLLECTIVE (α): {int(alpha*100)}%\n")
         self.resultat_text.insert(tk.END, "════════════════════════════════════════════════════════════════════\n\n")
-        self.resultat_text.insert(tk.END, f"🏆 RÉPARTITION COLLECTIVE ({int(p_collectif * 100)}% distribué à tous)\n")
+        
+        self.resultat_text.insert(tk.END, f"🏆 PART COLLECTIVE ({int(alpha*100)}%)\n")
         self.resultat_text.insert(tk.END, "────────────────────────────────────────────────────────────────────\n")
-        self.resultat_text.insert(tk.END, f"Part de base par membre : {partage_collectif:,.2f} aUEC\n\n".replace(',', ' '))
+        self.resultat_text.insert(tk.END, f"Formule : (α × T) / n = ({alpha:.2f} × {T:,.0f}) / {n}\n".replace(',', ' '))
+        self.resultat_text.insert(tk.END, f"Part par personne : {part_collective_par_personne:,.2f} aUEC\n\n".replace(',', ' '))
+        
         if investisseurs:
-            self.resultat_text.insert(tk.END, f"🚀 INVESTISSEURS ({int(p_invest*100)}% du bénéfice selon investissement)\n")
+            self.resultat_text.insert(tk.END, f"🚀 PART INVESTISSEMENT ({int((1-alpha)*100)}%)\n")
             self.resultat_text.insert(tk.END, "────────────────────────────────────────────────────────────────────\n")
+            self.resultat_text.insert(tk.END, f"Formule : (1-α) × T = {1-alpha:.2f} × {T:,.0f} = {part_investissement_totale:,.2f} aUEC\n\n".replace(',', ' '))
+            
             for nom, montant in investisseurs.items():
-                base = partage_collectif
-                bonus = resultats[nom] - base
-                self.resultat_text.insert(tk.END, f" {nom}:\n")
-                self.resultat_text.insert(tk.END, f" - Investi: {montant:,.2f} aUEC\n".replace(',', ' '))
-                self.resultat_text.insert(tk.END, f" - Part collective: {base:,.2f} aUEC\n".replace(',', ' '))
-                self.resultat_text.insert(tk.END, f" - Part bonus investisseur: {bonus:,.2f} aUEC\n".replace(',', ' '))
-                self.resultat_text.insert(tk.END, f" - TOTAL REÇU: {resultats[nom]:,.2f} aUEC\n".replace(',', ' '))
+                part_collective = part_collective_par_personne
+                part_invest = resultats[nom] - part_collective
+                proportion = (montant / somme_investie) * 100 if somme_investie > 0 else 0
+                
+                self.resultat_text.insert(tk.END, f" {nom} (investissement : {proportion:.1f}%) :\n")
+                self.resultat_text.insert(tk.END, f" - Investi : {montant:,.2f} aUEC\n".replace(',', ' '))
+                self.resultat_text.insert(tk.END, f" - Part collective : {part_collective:,.2f} aUEC\n".replace(',', ' '))
+                self.resultat_text.insert(tk.END, f" - Part investissement : {part_invest:,.2f} aUEC\n".replace(',', ' '))
+                self.resultat_text.insert(tk.END, f" - TOTAL REÇU : {resultats[nom]:,.2f} aUEC\n\n".replace(',', ' '))
+        
         if non_investisseurs:
-            self.resultat_text.insert(tk.END, f"\n👥 ÉQUIPIERS\n")
+            self.resultat_text.insert(tk.END, f"👥 ÉQUIPIERS\n")
             self.resultat_text.insert(tk.END, "────────────────────────────────────────────────────────────────────\n")
             for nom in non_investisseurs:
-                base = partage_collectif
-                self.resultat_text.insert(tk.END, f" {nom}: \n")
-                self.resultat_text.insert(tk.END, f" - Part collective: {base:,.2f} aUEC\n".replace(',', ' '))
-                self.resultat_text.insert(tk.END, f" - TOTAL REÇU: {resultats[nom]:,.2f} aUEC\n".replace(',', ' '))
+                part_collective = part_collective_par_personne
+                self.resultat_text.insert(tk.END, f" {nom} :\n")
+                self.resultat_text.insert(tk.END, f" - Part collective : {part_collective:,.2f} aUEC\n".replace(',', ' '))
+                self.resultat_text.insert(tk.END, f" - TOTAL REÇU : {resultats[nom]:,.2f} aUEC\n\n".replace(',', ' '))
+        
+        # Sauvegarde dans l'historique
         record = {
             "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
-            "benefice_total": int(benefice_total),
+            "benefice_total": int(T),
             "cout_total": int(cout_total),
             "revente_totale": int(revente_totale),
-            "percent_investisseurs": int(p_invest * 100),
-            "percent_equipiers": int(p_collectif * 100),
+            "percent_collectif": int(alpha * 100),
+            "percent_investissement": int((1-alpha) * 100),
             "parts": {nom: int(part) for nom, part in resultats.items()}
         }
         self.history.append(record)
