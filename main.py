@@ -94,8 +94,8 @@ class CargoShareApp:
         history_title = tk.Label(frame_history, text="🗂️ Historique (10 derniers)",
                                  font=("Segoe UI", 12, "bold"), bg=self.panel_color, fg=self.fg_color)
         history_title.pack(anchor="w")
-        self.history_list = tk.Listbox(frame_history, height=28, width=48, bg="#0b1a2e", fg=self.text_color,
-                                      font=("Consolas", 9))
+        self.history_list = tk.Listbox(frame_history, height=28, width=60, bg="#0b1a2e", fg=self.text_color,
+                                      font=("Consolas", 9), activestyle='none')
         self.history_list.pack(fill=tk.BOTH, expand=True, pady=(6,0))
         self.refresh_history_listbox()
         for c in range(8):
@@ -189,13 +189,22 @@ class CargoShareApp:
 
     def refresh_history_listbox(self):
         self.history_list.delete(0, tk.END)
-        for item in self.history[-10:][::-1]:
-            header = f"[{item['date']}] Benef: {item['benefice_total']:,} aUEC | Collectif:{item['percent_collectif']}% Invest:{item['percent_investissement']}%".replace(',', ' ')
-            self.history_list.insert(tk.END, header)
-            self.history_list.insert(tk.END, f" Coût: {item['cout_total']:,} | Revente: {item['revente_totale']:,}".replace(',', ' '))
-            self.history_list.insert(tk.END, " Acteurs:")
+        historique = self.history[-10:][::-1]
+        for item in historique:
+            self.history_list.insert(tk.END, "-" * 50)
+            self.history_list.insert(tk.END, f"[{item['date']}]")
+            self.history_list.insert(tk.END, f"Bénéfice : {item['benefice_total']:,} aUEC".replace(',', ' '))
+            self.history_list.insert(tk.END, f"Coût : {item['cout_total']:,} aUEC".replace(',', ' '))
+            self.history_list.insert(tk.END, f"Revente : {item['revente_totale']:,} aUEC".replace(',', ' '))
+            self.history_list.insert(tk.END, f"Part collective : {item.get('percent_collectif','')}% | Invest. : {item.get('percent_investissement','')}%")
+            self.history_list.insert(tk.END, "Acteurs :")
             for nom, part in item['parts'].items():
-                self.history_list.insert(tk.END, f" - {nom}: {part:,} aUEC".replace(',', ' '))
+                invest = self.personnes.get(nom, 0)
+                details = f"   - {nom:10s} | Bénef: {part:,} aUEC".replace(',', ' ')
+                if invest > 0:
+                    total_net = int(part) + invest
+                    details += f" | Investi: {int(invest):,} | Net: {total_net:,}".replace(',', ' ')
+                self.history_list.insert(tk.END, details)
             self.history_list.insert(tk.END, "")
 
     def calculer_parts(self):
