@@ -7,164 +7,80 @@
 ![Tkinter](https://img.shields.io/badge/GUI-Tkinter-orange?style=for-the-badge&logo=python&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
-**🌌 Interface graphique moderne inspirée du style Star Citizen 🌌**
+🌌 Interface graphique moderne inspirée du style Star Citizen 🌌
 
-*Calcul automatique et équitable de la répartition des bénéfices cargo en groupe*
-
-</div>
-
----
+*Calcul automatique et équitable de la répartition des bénéfices lors des runs cargo en groupe sur Star Citizen.*
 
 ## 📋 Description
 
-**Star Citizen Cargo Share Calculator** est une application Windows dotée d'une interface graphique élégante et moderne, spécialement conçue pour les pilotes de Star Citizen effectuant du trading en groupe. 
+Star Citizen Cargo Share est une application Windows avec interface graphique élégante qui calcule automatiquement la répartition des bénéfices entre investisseurs et équipiers lors de la vente de cargo en équipe.
 
-### 🎯 Fonctionnalités principales :
+### 🎯 Nouveau système de calcul :
+- Part collective : Un pourcentage du bénéfice (ex : 25%) partagé équitablement entre tous les membres.
+- Part investissement : Les % restants sont répartis selon la proportion investie par chaque participant.
+*Exemple : Pour chaque run, tous les joueurs reçoivent un bonus de base, puis ceux qui investissent bénéficient d'un bonus proportionnel à leur mise.*
 
-- 🧮 **Calcul automatique** des parts de bénéfices selon les investissements
-- 👥 **Gestion des équipages** : distinction investisseurs/non-investisseurs
-- 💰 **Répartition équitable** : 95% à 70% pour les investisseurs, 5% à 30% pour les participants
-- 🎨 **Interface moderne** inspirée de l'esthétique Star Citizen
-- 📊 **Rapports détaillés** avec récapitulatif complet
-- 🔄 **Calculs en temps réel** avec vérification automatique
+## 🛠️ Fonctionnalités principales
+- 🧮 Répartition ultra-fair : part collective + part proportionnelle (configurable en quelques clics)
+- 👥 Gestion avancée d'équipage : distinction automatique investisseurs / équipiers
+- 📊 Affichage ultra détaillé : bénéfice, parts, investissement et total net affichés pour chaque membre
+- 🔄 Résultats interactifs en temps réel : redimensionnement des panels, historique détaillé sur 10 runs
+- 🎨 Interface moderne Star Citizen touch : styles, couleurs, ergonomie, responsive
 
----
+## 🚀 Installation et lancement
 
-## 🚀 Installation Windows
+### Prérequis
+1. Python 3.7+ requis sur votre PC
 
-### 📋 Prérequis
+### Installation rapide
+1. Clonez le repository
+   git clone https://github.com/PriamK/star-citizen-cargo-share.git
+2. Accédez au dossier
+   cd star-citizen-cargo-share
+3. Lancez l'application
+   python main.py
 
-1. **Python 3.7+** installé sur votre système
-   ```bash
-   # Vérifiez votre version Python
-   python --version
-   ```
+## 🎮 Utilisation
 
-2. **Modules requis** (inclus avec Python par défaut) :
-   - `tkinter` (Interface graphique)
-   - `math` (Calculs)
+1. Ajoutez les membres et leur mise
+2. Indiquez le coût et la revente
+3. Réglez le % de bonus collectif (α)
+4. Cliquez sur 'Calculer les Parts' et voyez le récap détaillé
+5. Glissez la barre centrale pour ajuster l'affichage historique/résultat !
 
-### 💾 Installation rapide
+## 💡 Algorithme de calcul
 
-```bash
-# 1. Clonez le repository
-git clone https://github.com/PriamK/star-citizen-cargo-share.git
+Formule mathématique :
 
-# 2. Accédez au dossier
-cd star-citizen-cargo-share
+Part collective = (α × Bénéfice) / n
+Part investissement = ((1-α) × Bénéfice) × (investissement individuel / somme des investissements)
+Total reçu = Part collective + Part investissement
 
-# 3. Lancez l'application
-python main.py
-```
+Où :
+- α = pourcentage de la part collective (configurable de 10% à 40%)
+- n = nombre total de membres dans l'équipe
 
-### 🔧 Installation alternative (zip)
+## 📝 Exemple pratique
 
-1. Téléchargez le fichier ZIP depuis GitHub
-2. Extrayez dans un dossier de votre choix
-3. Double-cliquez sur `main.py` ou lancez via terminal
+Scénario Quantanium à 4 joueurs :
+- Alice investit 100,000 aUEC, Bob investit 50,000 aUEC
+- Charlie et David sont équipiers (0 aUEC)
+- Coût total : 150,000 aUEC, Revente : 200,000 aUEC
+- Bénéfice : 50,000 aUEC
+- α = 25% (part collective)
 
----
+Répartition :
+- Part collective : 12,500 aUEC pour chacun
+- Alice : 12,500 + 25,000 = 37,500 aUEC
+- Bob : 12,500 + 12,500 = 25,000 aUEC
+- Charlie : 12,500 aUEC
+- David : 12,500 aUEC
 
-## 🎮 Utilisation de l'Interface
-
-### 🖥️ Interface principale
-
-L'application se présente sous forme d'une fenêtre moderne avec trois sections principales :
-
-#### 🔷 Section 1 : Gestion des Participants
-```
-┌─────────────────────────────────────┐
-│  👨‍🚀 GESTION DES PERSONNES        │
-├─────────────────────────────────────┤
-│  Nom: [____________]               │
-│  Montant investi: [____________]   │
-│  [ Ajouter Personne ]              │
-└─────────────────────────────────────┘
-```
-
-#### 🔷 Section 2 : Paramètres du Run Cargo
-```
-┌─────────────────────────────────────┐
-│  💰 CALCUL DE RÉPARTITION          │
-├─────────────────────────────────────┤
-│  Coût total: [____________] aUEC   │
-│  Revente totale: [____________]    │
-│  [ Calculer les Parts ]            │
-└─────────────────────────────────────┘
-```
-
-#### 🔷 Section 3 : Résultats Détaillés
-```
-┌─────────────────────────────────────┐
-│  📊 RÉSULTATS                      │
-├─────────────────────────────────────┤
-│  ════════════════════════════════   │
-│  BÉNÉFICE TOTAL: 50,000 aUEC       │
-│  ════════════════════════════════   │
-│                                     │
-│  🚀 INVESTISSEURS (85%)            │
-│    - Alice: 30,000 aUEC reçus      │
-│    - Bob: 25,500 aUEC reçus        │
-│                                     │
-│  👥 ÉQUIPIERS (15%)                │
-│    - Charlie: 7,500 aUEC           │
-└─────────────────────────────────────┘
-```
-
-### 📝 Exemple d'utilisation pratique
-
-**Scénario :** Run cargo Quantanium à 4 joueurs
-
-1. **Ajout des participants :**
-   - Alice (Investisseur) : 100,000 aUEC
-   - Bob (Investisseur) : 50,000 aUEC  
-   - Charlie (Équipier) : 0 aUEC
-   - David (Équipier) : 0 aUEC
-
-2. **Saisie des montants :**
-   - Coût total : 150,000 aUEC
-   - Revente : 200,000 aUEC
-   - Bénéfice : 50,000 aUEC
-
-3. **Répartition automatique :**
-   - Alice : 28,333 aUEC (85% × 2/3)
-   - Bob : 14,167 aUEC (85% × 1/3)
-   - Charlie : 3,750 aUEC (15% ÷ 2)
-   - David : 3,750 aUEC (15% ÷ 2)
-
----
-
-### ⚙️ Options avancées
-
-```bash
-# Avec icône personnalisée et optimisations
-pyinstaller --onefile --windowed \
-            --name="StarCitizen-CargoShare" \
-            --icon="icon.ico" \
-            --add-data="assets;assets" \
-            main.py
-```
-
----
-
-## 🔧 Fonctionnalités Avancées
-
-### 💡 Algorithme de Répartition
-
-- **95% à 70% pour les investisseurs** (proportionnel à l'investissement)
-- **5% à 30% pour les non-investisseurs** (répartition équitable)
-- **Vérification automatique** des totaux
-- **Gestion des cas limites** (divisions par zéro, etc.)
-
-### 🎨 Personnalisation Interface
-
-L'interface peut être étendue avec :
-- Thèmes de couleurs personnalisés
-- Sauvegarde/chargement des configurations
-- Historique des runs précédents
-- Export des résultats (CSV, PDF)
-
----
+## 🔧 Fonctionnalités avancées
+- Historique détaillé : Suivi des 10 derniers runs avec détails complets
+- Interface redimensionnable : Ajustez les panels selon vos besoins
+- Calculs en temps réel : Vérification automatique et normalisation
+- Export possible : Sauvegarde des données en JSON
 
 ## 🤝 Contribution
 
@@ -174,17 +90,11 @@ Les contributions sont les bienvenues ! N'hésitez pas à :
 - 🎨 Améliorer l'interface utilisateur
 - 📝 Corriger la documentation
 
----
-
 ## 📄 Licence
 
-Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
+Ce projet est sous licence MIT. Voir le fichier LICENSE pour plus de détails.
 
----
-
-<div align="center">
-  
-**🌌 Bon trading, pilotes ! 🌌**
+**✨ Bon trading et bon loot, commandants ! ✨**
 
 *See you in the 'verse!*
 
