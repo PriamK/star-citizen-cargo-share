@@ -21,3 +21,8 @@ Thumbs.db
 # Application data
 *.json
 !*.example.json
+
+# PyInstaller build files
+build/
+dist/
+*.spec.bak

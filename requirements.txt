@@ -1,0 +1,5 @@
+# Star Citizen Cargo Share - Dependencies
+# For running the application (minimal dependencies - tkinter is built-in)
+
+# For building the executable
+pyinstaller>=6.0.0
