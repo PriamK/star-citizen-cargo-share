@@ -1,0 +1,172 @@
+name: 🚀 Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Triggers on version tags like v1.0.0, v1.2.3, etc.
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            artifact_name: StarCitizenCargoShare.exe
+            asset_name: StarCitizenCargoShare-Windows.exe
+          - os: ubuntu-latest
+            artifact_name: StarCitizenCargoShare
+            asset_name: StarCitizenCargoShare-Linux
+          - os: macos-latest
+            artifact_name: StarCitizenCargoShare
+            asset_name: StarCitizenCargoShare-macOS
+
+    steps:
+      - name: ⬢ Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 📦 Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+
+      - name: 🔨 Build executable
+        run: pyinstaller cargo-share.spec
+
+      - name: 📋 Verify build (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          if (Test-Path "dist/${{ matrix.artifact_name }}") {
+            Write-Host "✓ Build successful: dist/${{ matrix.artifact_name }}"
+            Get-Item "dist/${{ matrix.artifact_name }}" | Select-Object Name, Length
+          } else {
+            Write-Error "✗ Build failed: executable not found"
+            exit 1
+          }
+        shell: pwsh
+
+      - name: 📋 Verify build (Unix)
+        if: matrix.os != 'windows-latest'
+        run: |
+          if [ -f "dist/${{ matrix.artifact_name }}" ]; then
+            echo "✓ Build successful: dist/${{ matrix.artifact_name }}"
+            ls -lh "dist/${{ matrix.artifact_name }}"
+            chmod +x "dist/${{ matrix.artifact_name }}"
+          else
+            echo "✗ Build failed: executable not found"
+            exit 1
+          fi
+
+      - name: 📤 Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset_name }}
+          path: dist/${{ matrix.artifact_name }}
+          retention-days: 5
+
+  release:
+    name: 📦 Create Release
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬢ Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📥 Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: 📋 Display structure
+        run: ls -R artifacts
+
+      - name: 🏷️ Extract version
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: 📝 Generate release notes
+        id: notes
+        run: |
+          cat > release_notes.md << 'EOF'
+          # ⬢ Star Citizen Cargo Share ${{ steps.version.outputs.VERSION }}
+
+          ## 🎯 Modern Star Citizen UI
+
+          Calculateur de parts cargo avec interface futuriste inspirée de Star Citizen.
+
+          ## 📦 Downloads
+
+          Téléchargez la version correspondant à votre système :
+
+          - **Windows** : `StarCitizenCargoShare-Windows.exe`
+          - **Linux** : `StarCitizenCargoShare-Linux`
+          - **macOS** : `StarCitizenCargoShare-macOS`
+
+          ## 🚀 Installation
+
+          ### Windows
+          1. Téléchargez `StarCitizenCargoShare-Windows.exe`
+          2. Double-cliquez pour lancer (Windows Defender peut demander confirmation)
+
+          ### Linux
+          ```bash
+          # Téléchargez StarCitizenCargoShare-Linux
+          chmod +x StarCitizenCargoShare-Linux
+          ./StarCitizenCargoShare-Linux
+          ```
+
+          ### macOS
+          ```bash
+          # Téléchargez StarCitizenCargoShare-macOS
+          chmod +x StarCitizenCargoShare-macOS
+          ./StarCitizenCargoShare-macOS
+          ```
+
+          ## ✨ Features
+
+          - Interface moderne style Star Citizen (cyan electric, effets lumineux)
+          - Calcul équitable : part collective + part investissement
+          - Gestion d'équipage avec investisseurs et membres
+          - Historique détaillé des 10 derniers runs
+          - Panels redimensionnables
+          - Rapports de distribution professionnels
+
+          ## 🌌 See you in the 'verse, Commander!
+          EOF
+
+          cat release_notes.md
+
+      - name: 🎉 Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Star Citizen Cargo Share ${{ steps.version.outputs.VERSION }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+          files: |
+            artifacts/StarCitizenCargoShare-Windows.exe/StarCitizenCargoShare.exe
+            artifacts/StarCitizenCargoShare-Linux/StarCitizenCargoShare
+            artifacts/StarCitizenCargoShare-macOS/StarCitizenCargoShare
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: ✅ Release created
+        run: |
+          echo "╔═══════════════════════════════════════════════════════════╗"
+          echo "║          ⬢ RELEASE CREATED SUCCESSFULLY ⬢                ║"
+          echo "╚═══════════════════════════════════════════════════════════╝"
+          echo ""
+          echo "Version: ${{ steps.version.outputs.VERSION }}"
+          echo "URL: https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.VERSION }}"
