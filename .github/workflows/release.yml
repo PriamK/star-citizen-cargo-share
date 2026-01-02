@@ -92,6 +92,14 @@ jobs:
       - name: 📋 Display structure
         run: ls -R artifacts
 
+      - name: 📦 Prepare release files
+        run: |
+          mkdir -p release-assets
+          cp artifacts/StarCitizenCargoShare-Windows.exe/StarCitizenCargoShare.exe release-assets/StarCitizenCargoShare-Windows.exe || true
+          cp artifacts/StarCitizenCargoShare-Linux/StarCitizenCargoShare release-assets/StarCitizenCargoShare-Linux || true
+          cp artifacts/StarCitizenCargoShare-macOS/StarCitizenCargoShare release-assets/StarCitizenCargoShare-macOS || true
+          ls -la release-assets/
+
       - name: 🏷️ Extract version
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
@@ -155,11 +163,8 @@ jobs:
           body_path: release_notes.md
           draft: false
           prerelease: false
-          files: |
-            artifacts/StarCitizenCargoShare-Windows.exe/StarCitizenCargoShare.exe
-            artifacts/StarCitizenCargoShare-Linux/StarCitizenCargoShare
-            artifacts/StarCitizenCargoShare-macOS/StarCitizenCargoShare
-          fail_on_unmatched_files: true
+          files: release-assets/*
+          fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
